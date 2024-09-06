@@ -1,17 +1,32 @@
-import {ExpressionEntity} from "./domain/entities/expression.entity";
-import {ConstantEntity} from "./domain/entities/constant.entity";
-import {AdditionOperator} from "./domain/entities/operators/addition.operator";
-import {MultiplicationOperator} from "./domain/entities/operators/multiplication.operator";
-import {SubtractionOperator} from "./domain/entities/operators/subtraction.operator";
-import {DivisionOperator} from "./domain/entities/operators/division.operator";
+import {PresentationInterface} from "./presentation";
+import {CliPresentation} from "./presentation/cli";
+import {ColorsPlugin} from "./plugins";
+import {HttpServer, ExpressServer, WebserverPresentation, Http2Server} from "./presentation/webserver";
 
-const expression = new ExpressionEntity(
-  [
-    new ConstantEntity(2),
-    new ConstantEntity(5),
-    new DivisionOperator()
-  ]
-);
-const result = expression.evaluate();
-console.log(`Resultado: ${result}`); // Resultado: 3
+// Select the presentation interface to use
+//const presentation = new CliPresentation(new ColorsPlugin());
+// const presentation = new WebserverPresentation(new HttpServer());
+const presentation = new WebserverPresentation(new ExpressServer());
+// const presentation = new WebserverPresentation(new Http2Server());
 
+class App {
+  private presentation: PresentationInterface;
+
+  constructor(presentation: PresentationInterface) {
+    this.presentation = presentation;
+  }
+
+  async run(params?: object): Promise<void> {
+    this.presentation.run(params);
+  }
+
+}
+
+const main = async (): Promise<void> => {
+  const app = new App(presentation);
+  await app.run();
+}
+
+(async () => {
+  await main();
+})();

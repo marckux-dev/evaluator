@@ -2,10 +2,14 @@
 
 import {OperatorEntity} from "../operator.entity";
 
-const multiplication = (operands: number[]) => operands[1] * operands[0];
+const multiplication = (n1: number, n2: number) => n2 * n1;
 
 export class MultiplicationOperator extends OperatorEntity {
   constructor() {
-    super(2, multiplication, '*');
+    super({
+      operation: multiplication,
+      symbol: '*',
+      precedence: 20,
+    });
   }
 }

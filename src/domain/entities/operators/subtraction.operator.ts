@@ -2,10 +2,14 @@
 
 import {OperatorEntity} from "../operator.entity";
 
-const subtraction = (operands: number[]) => operands[1] - operands[0];
+const subtraction = (n1: number, n2: number) => n2 - n1;
 
 export class SubtractionOperator extends OperatorEntity {
   constructor() {
-    super(2, subtraction, '-');
+    super({
+      operation: subtraction,
+      symbol: '-',
+      precedence: 10,
+    });
   }
 }

@@ -1,60 +1,54 @@
 // src/domain/entities/expression.entity.ts
-import {TokenEntity} from "./token.entity";
+
+import {TokenInterface} from "./token.interface";
+import {InvalidExpressionError} from "./errors";
 import {ConstantEntity} from "./constant.entity";
 import {OperatorEntity} from "./operator.entity";
-
+import {ControllerEntity} from "./controller.entity";
 
 export class ExpressionEntity {
-  private stack: TokenEntity[];
+  private readonly _tokens: TokenInterface[];
 
-  constructor(tokens: TokenEntity[]) {
-    this.stack = tokens;
+  constructor(tokens: TokenInterface[]) {
+    this._tokens = tokens;
   }
 
-  public getTokens() : TokenEntity[] {
-    return this.stack;
+  public getTokens() : TokenInterface[] {
+    return this._tokens.slice();
   }
 
-  public setTokens(tokens: TokenEntity[]) {
-    this.stack = tokens;
-  }
-
-  public popToken() : TokenEntity | undefined{
-    if (this.stack.length === 0) {
-      throw new Error("No more tokens");
+  public evaluate() : ExpressionEntity {
+    const tokens = this.getTokens();
+    if (tokens.length === 0) {
+      throw new InvalidExpressionError(`The expression is empty`);
     }
-    return this.stack.pop();
-  }
-
-  public pushToken(token: TokenEntity) {
-    this.stack.push(token);
-  }
-
-  public length() : number {
-    return this.stack.length;
-  }
-
-  public copy() : ExpressionEntity {
-    return new ExpressionEntity(this.stack.slice());
-  }
-
-  public evaluate() : number {
-    const token = this.popToken();
-    if (token instanceof ConstantEntity) {
-      if (this.length() > 0) {
-        throw new Error("Extra tokens");
-      } else {
-        return token.value;
+    const stack: TokenInterface[] = [];
+    while (tokens.length > 0) {
+      const token = tokens.shift();
+      if (token instanceof ConstantEntity || token instanceof ControllerEntity) {
+        stack.push(token);
+      } else if (token instanceof OperatorEntity) {
+        token.execute(stack);
       }
-    } else {
-      const operator = token as OperatorEntity;
-      const newExpression = operator.apply(this);
-      return newExpression.evaluate();
     }
+    return new ExpressionEntity(stack);
+  }
+
+  public getValue(): number {
+    const expression = this.evaluate();
+    if (expression.getTokens().length !== 1) {
+      throw new InvalidExpressionError(`The evaluated expression gets more than one token`);
+    }
+    const token = expression.getTokens()[0];
+    if (!(token instanceof ConstantEntity)) {
+      throw new InvalidExpressionError(`The evaluated expression is not a constant`);
+    }
+
+    return (token as ConstantEntity).getValue();
   }
 
   public toString() : string {
-    return this.stack.map(token => token.toString()).join(" ");
+    return this.getTokens().map(token => token.getSymbol()).join(" ");
   }
 
 

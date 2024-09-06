@@ -1,10 +1,14 @@
-// src/domain/entities/operators/addition.operator.ts
+
 import {OperatorEntity} from "../operator.entity";
 
-const addition = (operands: number[]) => operands[1] + operands[0];
+const addition = (n1: number, n2:number) => n2 + n1;
 
 export class AdditionOperator extends OperatorEntity {
   constructor() {
-    super(2, addition, '+');
+    super({
+      operation: addition,
+      symbol: '+',
+      precedence: 10,
+    });
   }
 }

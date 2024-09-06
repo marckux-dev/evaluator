@@ -1,49 +1,94 @@
-// src/domain/entities/operator.entity.ts
-import {TokenEntity} from "./token.entity";
-import {ExpressionEntity} from "./expression.entity";
+import {TokenInterface} from "./token.interface";
 import {ConstantEntity} from "./constant.entity";
+import {InvalidExpressionError} from "./errors";
+import {EofController} from "./controllers";
 
-export  class OperatorEntity extends TokenEntity {
+export enum OperatorPosition {
+  PREFIX = 'PREFIX',
+  INFIX = 'INFIX',
+  POSTFIX = 'POSTFIX',
+}
+
+export enum OperatorAssociativity {
+  LEFT = 'LEFT',
+  RIGHT = 'RIGHT',
+}
+
+export interface OperatorEntityOptions {
+  symbol: string;
+  operation: (...operands: number[]) => number;
+  validation?: (...operands: number[]) => boolean;
+  precedence?: number;
+  position?: OperatorPosition;
+  associativity?: OperatorAssociativity;
+}
+
+export  class OperatorEntity implements TokenInterface {
   public readonly symbol: string;
-  public readonly numberOfOperands: number;
-  public readonly operation: (operands: number[]) => number;
+  protected numberOfOperands: number;
+  public readonly operation: (...operands: number[]) => number;
+  public readonly validation: (...operands: number[]) => boolean;
+  public readonly position: OperatorPosition;
+  public readonly associativity: OperatorAssociativity;
+  public precedence: number;
 
-  constructor(numberOfOperands: number, operation: (operands: number[]) => number, symbol: string) {
-    super();
-    this.numberOfOperands = numberOfOperands;
-    this.operation = operation;
+  constructor(options: OperatorEntityOptions) {
+    const {
+      symbol,
+      operation,
+      validation = (...operands) => true,
+      precedence = 1,
+      position = OperatorPosition.INFIX,
+      associativity = OperatorAssociativity.LEFT,
+    } = options;
     this.symbol = symbol;
+    this.operation = operation;
+    this.validation = validation;
+    this.numberOfOperands = operation.length;
+    this.precedence = precedence;
+    this.position = position;
+    this.associativity = associativity;
   }
 
-
-  public apply (expression: ExpressionEntity) : ExpressionEntity {
-    if (expression.getTokens().length < this.numberOfOperands) {
-      throw new Error("Not enough operands");
-    }
-    // create a deep copy of the expression
-    let newExpression = expression.copy();
-    const operands = [];
-    let i = this.numberOfOperands;
-    while (i > 0 && newExpression.length() > 0) {
-      const token = newExpression.popToken();
-      if (token instanceof ConstantEntity) {
-        operands.push(token.value);
-        i--;
-      } else {
-        newExpression = (token as OperatorEntity).apply(newExpression);
-      }
-    }
-    if (i > 0) {
-      throw new Error("Not enough operands");
-    } else {
-      const result = this.operation(operands);
-      const newConstant = new ConstantEntity(result);
-      newExpression.pushToken(newConstant);
-    }
-    return newExpression;
+  getNumberOfOperands(): number {
+    return this.numberOfOperands;
   }
 
-  public toString() : string {
+  getSymbol(): string {
     return this.symbol;
   }
+
+  getPrecedence(): number {
+    return this.precedence;
+  }
+
+  setPrecedence(precedence: number): void {
+    this.precedence = precedence;
+  }
+
+  execute(stack: TokenInterface[]): void {
+    const operands: number[] = [];
+    const numberOfOperands = this.getNumberOfOperands();
+    let n = numberOfOperands;
+    while (numberOfOperands === 0 || n > 0) {
+      const token = stack.pop();
+      if (token === undefined) {
+        throw new InvalidExpressionError(`Operator ${this.getSymbol()} has not enough operands.`);
+      }
+      if (token instanceof EofController) {
+        if (numberOfOperands === 0) {
+          break;
+        } else {
+          throw new InvalidExpressionError(`Unexpected EOF for operator ${this.getSymbol()}`);
+        }
+      }
+      if (token instanceof ConstantEntity) {
+        operands.push(token.getValue());
+      }
+      n--;
+    }
+    this.validation(...operands);
+    stack.push(new ConstantEntity(this.operation(...operands)));
+  }
+
 }
