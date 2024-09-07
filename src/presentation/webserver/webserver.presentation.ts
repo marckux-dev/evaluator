@@ -4,6 +4,10 @@ import {EvaluateStandardExpressionUsecase} from "../../application/usecases/eval
 import {RequestInterface} from "./request.interface";
 import {ResponseInterface} from "./response.interface";
 
+interface WebserverPresentationParams {
+  PORT: number;
+}
+
 export class WebserverPresentation implements PresentationInterface {
 
   constructor(
@@ -12,6 +16,7 @@ export class WebserverPresentation implements PresentationInterface {
 
   async run(params: object | undefined): Promise<void> {
 
+    const {PORT} = params as WebserverPresentationParams;
     const evaluator = new EvaluateStandardExpressionUsecase();
 
     this.server.addRoute('POST', '/evaluate', async (req: RequestInterface, res: ResponseInterface) => {
@@ -33,6 +38,6 @@ export class WebserverPresentation implements PresentationInterface {
       }
     })
 
-    this.server.start(3000);
+    this.server.start(PORT);
   }
 }

@@ -2,12 +2,15 @@ import {PresentationInterface} from "./presentation";
 import {CliPresentation} from "./presentation/cli";
 import {ColorsPlugin} from "./plugins";
 import {HttpServer, ExpressServer, WebserverPresentation, Http2Server} from "./presentation/webserver";
+import exp from "node:constants";
+import {envs} from "./config/envs";
 
 // Select the presentation interface to use
 //const presentation = new CliPresentation(new ColorsPlugin());
-// const presentation = new WebserverPresentation(new HttpServer());
-const presentation = new WebserverPresentation(new ExpressServer());
+const presentation = new WebserverPresentation(new HttpServer());
+// const presentation = new WebserverPresentation(new ExpressServer());
 // const presentation = new WebserverPresentation(new Http2Server());
+
 
 class App {
   private presentation: PresentationInterface;
@@ -24,7 +27,7 @@ class App {
 
 const main = async (): Promise<void> => {
   const app = new App(presentation);
-  await app.run();
+  await app.run(envs);
 }
 
 (async () => {
